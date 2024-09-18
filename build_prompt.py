@@ -15,7 +15,7 @@ class PromptBuilder:
             self.max_retrieval_length = 2000  # half of the max length of the model
         elif tokenizer == CodeGenTokenizer:
             self.tokenizer = CodeGenTokenizer()
-            self.max_retrieval_length = 1000
+            self.max_retrieval_length = 950
         tasks = Tools.load_jsonl(task_path)
         self.tasks_by_task_id = {task['metadata']['task_id']: task for task in tasks}
         self.seperator = '# ' + '-' * 50
@@ -89,8 +89,6 @@ class PromptBuilder:
             task_id = query_line['metadata']['task_id']
             task = self.tasks_by_task_id[task_id]
             old_prompt = task['prompt']
-            if len(self.tokenizer.tokenize(old_prompt)) > 1000:
-                print("The prompt is too long, skipping")
             top_k_context = query_line['top_k_context']
             new_prompt, chosen_context = self._build_prompt(mode, old_prompt, top_k_context)
             new_prompt_line = {
