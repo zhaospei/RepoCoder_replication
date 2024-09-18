@@ -62,6 +62,6 @@ if __name__ == '__main__':
         'opendilab_ACE',
     ]
     '''compute single prediction'''
-    file_path = 'output/line-rgrg-ada-ws-20-ss-2_samples.0.jsonl'
+    file_path = 'prompts/repocoder-one-gram-ws-20-ss-2_codegen-350M-mono.jsonl'
     compute_score_by_repo_with_metadata(repos, Tools.load_jsonl(file_path), 'EM', passk=1)
     compute_score_by_repo_with_metadata(repos, Tools.load_jsonl(file_path), 'ES', passk=1)

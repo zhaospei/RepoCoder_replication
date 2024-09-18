@@ -1,3 +1,24 @@
+> [!CAUTION]
+> This is a replication of the Repocoder implementation. The official version can be found at: https://github.com/microsoft/CodeT/tree/main/RepoCoder.
+
+Here is the replication of the implementation of the 2nd iteration pipeline for the `short_api_benchmark` datasets using the `codegen_350M_mono` model.
+
+1. Run the `run_RG1_and_oracle_method` function in `run_pipeline.py` to generate the file:  
+   `prompts/rg-one-gram-ws-20-ss-2.jsonl`.
+
+2. Execute `codegen_inference.py` to produce the prediction file:  
+   `prompts/rg-one-gram-ws-20-ss-2_codegen-350M-mono.jsonl`.
+
+3. Update the `prediction_path` in `run_pipeline.py` to point to the newly generated prediction file (i.e., `prompts/rg-one-gram-ws-20-ss-2_codegen-350M-mono.jsonl`), then rerun the `run_RepoCoder_method` in `run_pipeline.py`, which will generate:  
+   `prompts/repocoder-one-gram-ws-20-ss-2.jsonl`.
+
+4. Finally, use the `prompts/repocoder-one-gram-ws-20-ss-2.jsonl` file as input for `codegen_inference.py` to obtain the results for the Repocoder algorithm. This will produce the prediction file:  
+   `prompts/repocoder-one-gram-ws-20-ss-2_codegen-350M-mono.jsonl`.
+
+5. For evaluation, update the prediction file path in `compute_score.py` to the desired file, such as `prompts/repocoder-one-gram-ws-20-ss-2_codegen-350M-mono.jsonl`.
+
+I hope this sequence will guide you through the necessary steps to execute the replication process.
+
 # RepoCoder: Repository-Level Code Completion Through Iterative Retrieval and Generation
 
 # Overview

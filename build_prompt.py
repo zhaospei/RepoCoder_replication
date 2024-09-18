@@ -89,6 +89,8 @@ class PromptBuilder:
             task_id = query_line['metadata']['task_id']
             task = self.tasks_by_task_id[task_id]
             old_prompt = task['prompt']
+            if len(self.tokenizer.tokenize(old_prompt)) > 1000:
+                print("The prompt is too long, skipping")
             top_k_context = query_line['top_k_context']
             new_prompt, chosen_context = self._build_prompt(mode, old_prompt, top_k_context)
             new_prompt_line = {
