@@ -9,8 +9,7 @@ import dotenv
 import os
 dotenv.load_dotenv(override=True) 
 HEADERS = {
-    # "Authorization": f"{os.environ.get("GITHUB_API_KEY")}",
-    "Authorization": "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",
+    "Authorization": f"{os.environ.get("GITHUB_API_KEY")}",
     "Accept": "application/vnd.github.v3+json",
 }
 
