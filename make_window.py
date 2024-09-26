@@ -8,12 +8,12 @@ from utils import Tools, FilePathBuilder, CONSTANTS
 from collections import defaultdict
 
 class RepoWindowMaker:
-    def __init__(self, repo, window_size, slice_size):
+    def __init__(self, repo, window_size, slice_size, language):
         self.repo = repo
         self.window_size = window_size
         self.slice_size = slice_size
         self.slice_step = 1 if window_size // slice_size == 0 else window_size // slice_size
-        self.source_code_files = Tools.iterate_repository(repo)
+        self.source_code_files = Tools.iterate_repository(repo, language)
         
     def _buid_windows_for_a_file(self, fpath_tuple, code):
         code_windows = []
@@ -66,12 +66,12 @@ class RepoWindowMaker:
 
 class BaselineWindowMaker:
     '''the retrieve-and-generate approach'''
-    def __init__(self, benchmark, repo, window_size, tasks):
+    def __init__(self, benchmark, repo, window_size, tasks, language):
         self.benchmark = benchmark
         self.repo = repo
         self.window_size = window_size
         self.tasks = tasks
-        self.source_code = Tools.iterate_repository(repo)
+        self.source_code = Tools.iterate_repository(repo, language)
     
     def build_window(self):
         code_windows = []
@@ -103,12 +103,12 @@ class BaselineWindowMaker:
         Tools.dump_pickle(code_windows, output_path)
 
 class GroundTruthWindowMaker:
-    def __init__(self, benchmark, repo, window_size, tasks):
+    def __init__(self, benchmark, repo, window_size, tasks, language):
         self.benchmark = benchmark
         self.repo = repo
         self.window_size = window_size
         self.tasks = tasks
-        self.source_code = Tools.iterate_repository(repo)
+        self.source_code = Tools.iterate_repository(repo, language)
 
     def build_window(self):
         code_windows = []
@@ -142,11 +142,11 @@ class GroundTruthWindowMaker:
         Tools.dump_pickle(code_windows, output_path)
 
 class PredictionWindowMaker:
-    def __init__(self, repo, window_size, prediction_path, window_path_builder):
+    def __init__(self, repo, window_size, prediction_path, window_path_builder, language):
         self.repo = repo
         self.window_size = window_size
         self.prediction_path = prediction_path
-        self.source_code = Tools.iterate_repository(repo)
+        self.source_code = Tools.iterate_repository(repo, language)
         self.predictions = Tools.load_jsonl(prediction_path)
         self.window_path_builder = window_path_builder
     
@@ -189,34 +189,36 @@ class PredictionWindowMaker:
         Tools.dump_pickle(code_windows, output_path)
 
 class MakeWindowWrapper:
-    def __init__(self, benchmark, repos, window_sizes, slice_sizes):
+    def __init__(self, benchmark, repos, window_sizes, slice_sizes, language=None):
         self.repos = repos
         self.window_sizes = window_sizes
         self.slice_sizes = slice_sizes
 
         self.benchmark = benchmark
-
         if benchmark == CONSTANTS.line_benchmark:
             self.task_file_path = FilePathBuilder.random_line_completion_benchmark
-        elif benchmark == CONSTANTS.api_benchmark:
-            self.task_file_path = FilePathBuilder.api_completion_benchmark
+            self.language = 'python'
         elif benchmark == CONSTANTS.short_line_benchmark:
             self.task_file_path = FilePathBuilder.short_random_line_completion_benchmark
-        elif benchmark == CONSTANTS.short_api_benchmark:
-            self.task_file_path = FilePathBuilder.short_api_completion_benchmark
+            self.language = 'python'
+        elif benchmark == CONSTANTS.rust_line_benchmark:
+            self.task_file_path = FilePathBuilder.rust_random_line_completion_benchmark
+            self.language = 'rust'
+        elif benchmark == None:
+            self.language = language
 
     def window_for_repo_files(self):
         for window_size, slice_size in itertools.product(self.window_sizes, self.slice_sizes):
             for repo in self.repos:
-                repo_window_maker = RepoWindowMaker(repo, window_size, slice_size)
+                repo_window_maker = RepoWindowMaker(repo, window_size, slice_size, self.language)
                 repo_window_maker.build_windows()
 
     def window_for_baseline_and_ground(self):
         tasks = Tools.load_jsonl(self.task_file_path)
         for window_size in self.window_sizes:
             for repo in self.repos:
-                baseline_window_maker = BaselineWindowMaker(self.benchmark, repo, window_size, tasks)
-                ground_window_maker = GroundTruthWindowMaker(self.benchmark, repo, window_size, tasks)
+                baseline_window_maker = BaselineWindowMaker(self.benchmark, repo, window_size, tasks, self.language)
+                ground_window_maker = GroundTruthWindowMaker(self.benchmark, repo, window_size, tasks, self.language)
                 baseline_window_maker.build_window()
                 ground_window_maker.build_window()
 
@@ -225,5 +227,5 @@ class MakeWindowWrapper:
             prediction_path = prediction_path_template.format(window_size=window_size, slice_size=slice_size)
             for repo in self.repos:
                 window_path_builder = functools.partial(FilePathBuilder.gen_first_window_path, self.benchmark, mode)
-                pred_window_maker = PredictionWindowMaker(repo, window_size, prediction_path, window_path_builder)
+                pred_window_maker = PredictionWindowMaker(repo, window_size, prediction_path, window_path_builder, self.language)
                 pred_window_maker.build_window()

@@ -5,3 +5,9 @@ cache/*
 !repositories/line_and_api_level.zip
 !datasets/datasets.zip
 __pycache__/*
+rust_cache/*
+prompts/*
+output/*
+rust_repositories/*
+rust_benchmark/*
+!repositories/rust_line_level.zip

@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import tqdm
 import itertools
 from collections import defaultdict
@@ -16,7 +17,7 @@ class BagOfWords:
         print(f'building one gram vector for {self.input_file}')
         futures = dict()
         lines = Tools.load_pickle(self.input_file)
-        with ProcessPoolExecutor(max_workers=48) as executor:
+        with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
             for line in lines:
                 futures[executor.submit(Tools.tokenize, line['context'])] = line
         

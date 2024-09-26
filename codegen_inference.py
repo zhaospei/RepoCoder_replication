@@ -1,6 +1,7 @@
 import torch
 import tqdm
 import json
+import argparse
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
@@ -45,7 +46,9 @@ class CodeGen:
             )
         gen_text = self.tokenizer.batch_decode(gen_tokens, skip_special_tokens=True)
         for i in range(len(gen_text)):  # remove the prompt
+            print("Prompt:\n", prompt_batch[i])
             gen_text[i] = gen_text[i][len(prompt_batch[i]):]
+            print("Gen_text:\n", gen_text[i])
         return gen_text
 
     def batch_generate(self, file):
@@ -70,8 +73,12 @@ class CodeGen:
 
 
 if __name__ == '__main__':
-    file_path = 'prompts/rg-one-gram-ws-20-ss-2.jsonl'
-    tiny_codegen = 'Salesforce/codegen-350M-mono'
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", default='Salesforce/codegen-350M-mono', type=str)
+    parser.add_argument("--file_path", default=None, type=str)
+    args = parser.parse_args()
+    # file_path = 'prompts/repocoder-one-gram-ws-20-ss-2.jsonl'
+    # tiny_codegen = 'Salesforce/codegen-350M-mono'
 
-    cg = CodeGen(tiny_codegen, batch_size=8)
-    cg.batch_generate(file_path)
+    cg = CodeGen(args.model, batch_size=1)
+    cg.batch_generate(args.file_path)

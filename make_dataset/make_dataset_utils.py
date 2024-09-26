@@ -74,7 +74,7 @@ class Tools:
 
     @staticmethod
     def iterate_repository(base_dir, repo):
-        pattern = os.path.join(f'{base_dir}/{repo}', "**", "*.py")
+        pattern = os.path.join(f'{base_dir}\{repo}', "**", "*.rs")
         files = glob.glob(pattern, recursive=True)
 
         skipped_files = []

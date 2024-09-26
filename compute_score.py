@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import argparse
 import editdistance
 from collections import defaultdict
 
@@ -49,19 +50,45 @@ def compute_score_by_repo_with_metadata(repos, lines, stype, passk=1):
     print(stype)
     for repo in avg_scores.keys():
         print(f'{avg_scores[repo]}\t{repo_count[repo]}\t{repo}')
+    sum_scores = 0
+    len_scores = 0
+    for repo in scores:
+        sum_scores += sum(scores[repo])
+        len_scores += len(scores[repo])
+    print(f'Total {stype} avarage: ', round(sum_scores/ len_scores, 4) * 100)
 
 if __name__ == '__main__':
-    repos = [
-        'huggingface_diffusers',
-        'nerfstudio-project_nerfstudio',
-        'awslabs_fortuna',
-        'huggingface_evaluate',
-        'google_vizier',
-        'alibaba_FederatedScope',
-        'pytorch_rl',
-        'opendilab_ACE',
-    ]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--language", default='rust', type=str)
+    parser.add_argument("--prediction_path", default=None, type=str)
+    args = parser.parse_args() 
+    if args.language == 'python':
+        repos = [
+            'huggingface_diffusers',
+            'nerfstudio-project_nerfstudio',
+            'awslabs_fortuna',
+            'huggingface_evaluate',
+            'google_vizier',
+            'alibaba_FederatedScope',
+            'pytorch_rl',
+            'opendilab_ACE',
+        ]
+    elif args.language == 'rust':
+        repos = [
+            'sxyazi_yazi',
+            'ratatui_ratatui',
+            'lapce_floem',
+            'Julien-cpsn_ATAC',
+            'iggy-rs_iggy',
+            'Cormanz_smartgpt',
+            'lapce_lapdev',
+            'spaceandtimelabs_sxt-proof-of-sql',
+            'restatedev_restate',
+            'FractalFir_rustc_codegen_clr',
+        ]
+    if args.prediction_path == None:
+        print('prediction path is NONE!')
     '''compute single prediction'''
-    file_path = 'prompts/repocoder-one-gram-ws-20-ss-2_codegen-350M-mono.jsonl'
-    compute_score_by_repo_with_metadata(repos, Tools.load_jsonl(file_path), 'EM', passk=1)
-    compute_score_by_repo_with_metadata(repos, Tools.load_jsonl(file_path), 'ES', passk=1)
+    print(f'Starting compute score for {args.prediction_path} in {args.language}')
+    compute_score_by_repo_with_metadata(repos, Tools.load_jsonl(args.prediction_path), 'EM', passk=1)
+    compute_score_by_repo_with_metadata(repos, Tools.load_jsonl(args.prediction_path), 'ES', passk=1)

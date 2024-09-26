@@ -10,22 +10,26 @@ from transformers import AutoTokenizer
 
 class CONSTANTS:
     # regular version for Codex
-    api_benchmark = 'random_api'
     line_benchmark = 'random_line'
     # short version for CodeGen
-    short_api_benchmark = 'short_api'
     short_line_benchmark = 'short_line'
+    # version for Rust language
+    rust_line_benchmark = 'rust_line'
     gt = 'gt'
     rg = 'r-g' # vanilla retrieval-augmented approach
     rgrg = 'r-g-r-g' # RepoCoder, two-stage retrieval and generation
+    rgrgrg = 'r-g-r-g-r-g' # RepoCoder, third-stage retrieval and generation 
+    rgrgrgrg = 'r-g-r-g-r-g-r-g' # RepoCoder, forth-stage retrieval and generation 
 
 class FilePathBuilder:
-    api_completion_benchmark = 'datasets/api_level_completion_2k_context_codex.test.jsonl'
+    # regular version for Codex
     random_line_completion_benchmark = 'datasets/line_level_completion_2k_context_codex.test.jsonl'
-    # short version for codegen
-    short_api_completion_benchmark = 'datasets/api_level_completion_1k_context_codegen.test.jsonl'
+    # short version for CodeGen
     short_random_line_completion_benchmark = 'datasets/line_level_completion_1k_context_codegen.test.jsonl'
-    repo_base_dir = 'repositories/'
+    # version for Rust language
+    rust_random_line_completion_benchmark = 'output/rust-repos-random-line-completion.jsonl'
+    python_repo_base_dir = 'repositories/line_and_api_level'
+    rust_repo_base_dir = 'repositories/rust_line_level'
 
     @staticmethod
     def make_needed_dir(file_path):
@@ -140,9 +144,15 @@ class Tools:
             return lines
     
     @staticmethod
-    def iterate_repository(repo):
-        base_dir = FilePathBuilder.repo_base_dir
-        pattern = os.path.join(f'{base_dir}/{repo}', "**", "*.py")
+    def iterate_repository(repo, language):
+        if language == 'python':
+            base_dir = FilePathBuilder.python_repo_base_dir
+            pattern = os.path.join(f'{base_dir}\{repo}', "**", "*.py")
+        elif language == 'rust':
+            base_dir = FilePathBuilder.rust_repo_base_dir
+            pattern = os.path.join(f'{base_dir}\{repo}', "**", "*.rs")
+        else:
+            print(f'{language} is not supported yet!')
         files = glob.glob(pattern, recursive=True)
 
         skipped_files = []

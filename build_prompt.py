@@ -7,7 +7,7 @@ import os
 from utils import Tools, FilePathBuilder, CodexTokenizer, CodeGenTokenizer, CONSTANTS
 
 class PromptBuilder:
-    def __init__(self, query_lines_with_retrieval_results, task_path, log_message, tokenizer):
+    def __init__(self, query_lines_with_retrieval_results, task_path, log_message, tokenizer, line_comment):
         self.query_lines_with_retrieval_results = query_lines_with_retrieval_results
         self.log_message = log_message
         if tokenizer == CodexTokenizer:
@@ -15,10 +15,11 @@ class PromptBuilder:
             self.max_retrieval_length = 2000  # half of the max length of the model
         elif tokenizer == CodeGenTokenizer:
             self.tokenizer = CodeGenTokenizer()
-            self.max_retrieval_length = 950
+            self.max_retrieval_length = 900
         tasks = Tools.load_jsonl(task_path)
+        self.line_comment = line_comment
         self.tasks_by_task_id = {task['metadata']['task_id']: task for task in tasks}
-        self.seperator = '# ' + '-' * 50
+        self.seperator = self.line_comment + ' ' +  '-' * 50
         self.max_examples = 10  # maximum number of examples to be included in the prompt
 
     def _make_a_block(self, retrieved_context):
@@ -27,11 +28,11 @@ class PromptBuilder:
         # put the file path in the comment
         assert metadata[0]['fpath_tuple'][0] == metadata[0]['repo']
         f_paths = ['/'.join(x['fpath_tuple'][1:]) for x in metadata]
-        f_paths_str = '\n'.join([f'# {f_path}' for f_path in f_paths])
-        f_path_comment = f'# the below code fragment can be found in:'
+        f_paths_str = '\n'.join([f'{self.line_comment} {f_path}' for f_path in f_paths])
+        f_path_comment = f'{self.line_comment} the below code fragment can be found in:'
         # put code lines in the comment
         content_lines = content['context'].splitlines()
-        content_lines_comment = [f'# {line}' for line in content_lines]
+        content_lines_comment = [f'{self.line_comment} {line}' for line in content_lines]
         # aggregate the comment and the code lines
         
         block_str = '\n'.join([f_path_comment, f_paths_str, self.seperator] + content_lines_comment + [self.seperator]) + '\n'
@@ -45,10 +46,14 @@ class PromptBuilder:
         # put the file path in the comment
         assert metadata[0]['fpath_tuple'][0] == metadata[0]['repo']
         f_paths = ['/'.join(x['fpath_tuple'][1:]) for x in metadata]
-        f_paths_str = '\n'.join([f'# {f_path}' for f_path in f_paths])
-        f_path_comment = f'# the below code fragment can be found in:'
+        f_paths_str = '\n'.join([f'{self.line_comment} {f_path}' for f_path in f_paths])
+        f_path_comment = f'{self.line_comment} the below code fragment can be found in:'
         # put code lines in the comment
-        original_code = Tools.read_code(os.path.join(FilePathBuilder.repo_base_dir, *metadata[0]['fpath_tuple']))
+        if self.line_comment == '#':
+            original_code = Tools.read_code(os.path.join(FilePathBuilder.python_repo_base_dir, *metadata[0]['fpath_tuple']))
+        elif self.line_comment == '//':
+            original_code = Tools.read_code(os.path.join(FilePathBuilder.rust_repo_base_dir, *metadata[0]['fpath_tuple']))
+
         code_lines = original_code.splitlines()
         end_line_no = metadata[0]['end_line_no']
         window_size = metadata[0]['window_size']
@@ -56,7 +61,7 @@ class PromptBuilder:
         new_end_line_no = min(end_line_no + window_size // slice_size, len(code_lines))
         new_start_line_no = max(0, new_end_line_no - window_size)
         content_lines = code_lines[new_start_line_no:new_end_line_no]
-        content_lines_comment = [f'# {line}' for line in content_lines]
+        content_lines_comment = [f'{self.line_comment} {line}' for line in content_lines]
         # aggregate the comment and the code lines
         block_str = '\n'.join([f_path_comment, f_paths_str, self.seperator] + content_lines_comment + [self.seperator]) + '\n'
         tokenized_block = self.tokenizer.tokenize(block_str)
@@ -64,7 +69,7 @@ class PromptBuilder:
         return block_str, token_len
 
     def _build_prompt(self, mode, prompt, top_k_context):
-        prepend_context = "# Here are some relevant code fragments from other files of the repo:\n"
+        prepend_context = f"{self.line_comment} Here are some relevant code fragments from other files of the repo:\n"
         prepend_context += self.seperator + '\n'
         current_token_length = 20  # the length of the head_prompt, same for codex and codegen tokenizer
         prepend_blocks = []
@@ -124,12 +129,13 @@ class BuildPromptWrapper:
         self.slice_size = slice_size
         if benchmark == CONSTANTS.line_benchmark:
             self.task_path = FilePathBuilder.random_line_completion_benchmark
-        elif benchmark == CONSTANTS.api_benchmark:
-            self.task_path = FilePathBuilder.api_completion_benchmark
-        elif benchmark == CONSTANTS.short_api_benchmark:
-            self.task_path = FilePathBuilder.short_api_completion_benchmark
+            self.line_comment = '#'
         elif benchmark == CONSTANTS.short_line_benchmark:
             self.task_path = FilePathBuilder.short_random_line_completion_benchmark
+            self.line_comment = '#'
+        elif benchmark == CONSTANTS.rust_line_benchmark:
+            self.task_path = FilePathBuilder.rust_random_line_completion_benchmark
+            self.line_comment = '//'
         self.benchmark = benchmark
         self.tokenizer = tokenizer
     
@@ -144,7 +150,7 @@ class BuildPromptWrapper:
             
             query_lines_with_retrieval_results = Tools.load_pickle(retrieval_results)
             log_message = f'repo: {repo}, window: {self.window_size}, slice: {self.slice_size}'
-            worker = PromptBuilder(query_lines_with_retrieval_results, self.task_path, log_message, self.tokenizer)
+            worker = PromptBuilder(query_lines_with_retrieval_results, self.task_path, log_message, self.tokenizer, self.line_comment)
             workers.append(worker)
         lines = []
         for worker in workers:
